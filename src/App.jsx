@@ -9,6 +9,7 @@ import Main from './pages/Main';
 import Summary from './pages/Summary';
 import History from './pages/History';
 import Profile from './pages/Profile';
+import RangeSearch from './pages/RangeSearch';
 
 export default function App() {
   return (
@@ -45,6 +46,14 @@ export default function App() {
           <AuthGuard>
             <Layout>
               <Profile />
+            </Layout>
+          </AuthGuard>
+        } />
+
+        <Route path="/range-search" element={
+          <AuthGuard>
+            <Layout>
+              <RangeSearch />
             </Layout>
           </AuthGuard>
         } />

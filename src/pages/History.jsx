@@ -19,6 +19,7 @@ export default function History() {
   const [isSearchMode, setIsSearchMode] = useState(false);
   const PAGE_SIZE = 50;
 
+
   useEffect(() => {
     // Debounce query
     const delayDebounceFn = setTimeout(() => {
@@ -120,6 +121,7 @@ export default function History() {
     if (reset) setLoading(false);
     else setLoadingMore(false);
   };
+
 
   return (
     <div className="space-y-6 pb-6 pt-2">
@@ -241,6 +243,7 @@ export default function History() {
           )}
         </div>
       )}
+
     </div>
   );
 }
