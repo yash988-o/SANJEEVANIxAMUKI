@@ -7,6 +7,8 @@ import TransactionCard from '../components/TransactionCard';
 export default function Main() {
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
+  const [age, setAge] = useState('');
+  const [gender, setGender] = useState('');
   const [amount, setAmount] = useState('');
   const [type, setType] = useState('receive');
   const [datetime, setDatetime] = useState('');
@@ -52,7 +54,7 @@ export default function Main() {
     const delayDebounceFn = setTimeout(async () => {
       const { data } = await supabase
         .from('profiles')
-        .select('id, name, mobile')
+        .select('id, name, mobile, age, gender')
         .ilike('name', `%${name}%`)
         .limit(5);
 
@@ -68,7 +70,7 @@ export default function Main() {
       .from('transactions')
       .select(`
         *,
-        profiles ( name, mobile )
+        profiles ( name, mobile, age, gender )
       `)
       .order('transaction_at', { ascending: false })
       .limit(20);
@@ -82,6 +84,8 @@ export default function Main() {
   const handleSelectSuggestion = (profile) => {
     setName(profile.name);
     setMobile(profile.mobile);
+    setAge(profile.age || '');
+    setGender(profile.gender || '');
     setSelectedProfileId(profile.id);
     setShowSuggestions(false);
   };
@@ -120,7 +124,7 @@ export default function Main() {
         } else {
           const { data: newProfile, error: profileErr } = await supabase
             .from('profiles')
-            .insert({ name: name.trim(), mobile: mobile.trim() })
+            .insert({ name: name.trim(), mobile: mobile.trim(), age: age ? Number(age) : null, gender: gender || null })
             .select('id')
             .single();
             
@@ -147,6 +151,8 @@ export default function Main() {
       // Reset form
       setName('');
       setMobile('');
+      setAge('');
+      setGender('');
       setAmount('');
       setNote('');
       setType('receive');
@@ -225,6 +231,32 @@ export default function Main() {
                 />
               </div>
               {errors.mobile && <p className="text-give text-[12px] mt-1">{errors.mobile}</p>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[13px] font-bold text-navyDark mb-1">Age</label>
+              <input
+                type="number"
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                className="w-full h-12 px-4 rounded-[10px] border border-borderBlue focus:border-royal focus:ring-1 focus:ring-royal outline-none text-[15px]"
+                placeholder="e.g. 35"
+              />
+            </div>
+            <div>
+              <label className="block text-[13px] font-bold text-navyDark mb-1">Gender</label>
+              <select
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                className="w-full h-12 px-4 rounded-[10px] border border-borderBlue focus:border-royal focus:ring-1 focus:ring-royal outline-none text-[15px] bg-white"
+              >
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
           </div>
 

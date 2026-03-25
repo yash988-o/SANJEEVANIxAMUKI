@@ -52,7 +52,7 @@ export default function History() {
       const { data, error } = await supabase
         .from('profiles')
         .select(`
-          id, name, mobile, created_at,
+          id, name, mobile, age, gender, created_at,
           transactions(id, amount, type, transaction_at, is_cleared, created_at)
         `)
         .or(`name.ilike.%${query}%,mobile.ilike.%${query}%`)
@@ -86,7 +86,7 @@ export default function History() {
       // Normal Mode: Fetch from Transactions
       let q = supabase
         .from('transactions')
-        .select('*, profiles!inner(name, mobile)', { count: 'exact' });
+        .select('*, profiles!inner(name, mobile, age, gender)', { count: 'exact' });
 
       if (statusFilter === 'pending') q = q.is('is_cleared', false);
       if (statusFilter === 'cleared') q = q.is('is_cleared', true);

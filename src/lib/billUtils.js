@@ -54,6 +54,10 @@ export const generateBillPDF = (transaction) => {
   doc.setFont('helvetica', 'normal');
   doc.text(`Mobile : ${transaction.profiles?.mobile || 'N/A'}`, 12, partyBoxY + 12);
   
+  const age = transaction.profiles?.age || 'N/A';
+  const gender = transaction.profiles?.gender || 'N/A';
+  doc.text(`Age/Gender : ${age} / ${gender}`, 12, partyBoxY + 18);
+  
   // Bill Details
   const billNo = Object.hasOwn(transaction, 'bill_no') ? transaction.bill_no : transaction.id.substring(0, 6).toUpperCase();
   doc.text(`Bill no.          : ${billNo}`, 128, partyBoxY + 6);
