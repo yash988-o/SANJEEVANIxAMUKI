@@ -77,7 +77,7 @@ export const generateBillPDF = (transaction) => {
     body: [
       [
         '1',
-        transaction.note || (transaction.type === 'receive' ? 'Deposit Amount' : 'Credit Amount'),
+        transaction.note || (transaction.type === 'receive' ? 'Deposit Amount' : 'Withdrawal Amount'),
         '-',
         '1.000',
         'Pcs.',
@@ -101,7 +101,8 @@ export const generateBillPDF = (transaction) => {
   // Amount in words
   doc.rect(10, finalY + 8, 190, 10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Rupees Amount Received: ${Number(transaction.amount).toFixed(2)} Only`, 12, finalY + 14);
+  const amountStr = transaction.type === 'receive' ? 'Amount Received' : 'Amount Withdrawn';
+  doc.text(`Rupees ${amountStr}: ${Number(transaction.amount).toFixed(2)} Only`, 12, finalY + 14);
 
   // Bank Details / T&C
   const termY = finalY + 18;

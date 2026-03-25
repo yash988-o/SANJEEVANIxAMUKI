@@ -56,6 +56,9 @@ export default function App() {
             </Layout>
           </AuthGuard>
         } />
+
+        {/* Fallback for removed or invalid routes (like the old /bills link) */}
+        <Route path="*" element={<Login />} />
       </Routes>
     </>
   );
