@@ -1,13 +1,13 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { PenLine, BarChart2, Clock, CalendarSearch } from 'lucide-react';
+import { PenLine, BarChart2, Clock, CalendarSearch, FileText } from 'lucide-react';
 
 export default function BottomNav() {
   const navItems = [
     { to: '/', icon: PenLine, label: 'Main' },
     { to: '/summary', icon: BarChart2, label: 'Summary' },
     { to: '/history', icon: Clock, label: 'History' },
-    { to: '/range-search', icon: CalendarSearch, label: 'Range' },
+    { to: '/bills', icon: FileText, label: 'Bills' },
   ];
 
   return (

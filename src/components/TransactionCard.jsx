@@ -254,12 +254,39 @@ export default function TransactionCard({ transaction, variant = 'full' }) {
               </div>
             </div>
 
-            <button 
-              onClick={(e) => { e.stopPropagation(); navigate(`/profile/${transaction.profile_id}`); }}
-              className="mt-1 text-royal font-bold text-[14px] text-center w-full py-2 bg-royal/10 rounded-[10px] hover:bg-royal/20 transition-colors"
-            >
-              View Full Profile →
-            </button>
+            <div className="flex gap-2 mt-4">
+              <button 
+                onClick={(e) => { e.stopPropagation(); navigate(`/profile/${transaction.profile_id}`); }}
+                className="flex-1 text-royal font-bold text-[14px] text-center w-full py-2 bg-royal/10 rounded-[10px] hover:bg-royal/20 transition-colors"
+                title="View Full Profile"
+              >
+                View Profile →
+              </button>
+
+              {isReceive && (
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      const { sendBillToTelegram } = await import('../lib/billUtils');
+                      e.target.disabled = true;
+                      await sendBillToTelegram(transaction);
+                      window.alert('✅ Bill successfully sent to Telegram!');
+                    } catch (err) {
+                      console.error(err);
+                      window.alert('❌ Failed to send Bill ' + err.message);
+                    } finally {
+                      e.target.disabled = false;
+                    }
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-[10px] bg-receiveBg border border-receive/30 text-receive hover:bg-receive hover:text-white transition-colors"
+                  title="Generate & Send Bill to Telegram"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span className="text-[13px] font-bold whitespace-nowrap">Send Bill</span>
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
