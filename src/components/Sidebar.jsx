@@ -13,7 +13,6 @@ export default function Sidebar() {
     { to: '/summary', icon: BarChart2, label: 'Summary' },
     { to: '/history', icon: Clock, label: 'History' },
     { to: '/range-search', icon: CalendarSearch, label: 'Range Search' },
-    { to: '/bills', icon: FileText, label: 'Bills' },
   ];
 
   return (

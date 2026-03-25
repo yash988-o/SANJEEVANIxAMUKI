@@ -7,7 +7,6 @@ export default function BottomNav() {
     { to: '/', icon: PenLine, label: 'Main' },
     { to: '/summary', icon: BarChart2, label: 'Summary' },
     { to: '/history', icon: Clock, label: 'History' },
-    { to: '/bills', icon: FileText, label: 'Bills' },
   ];
 
   return (
