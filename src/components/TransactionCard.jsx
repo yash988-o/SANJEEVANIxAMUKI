@@ -263,50 +263,52 @@ export default function TransactionCard({ transaction, variant = 'full' }) {
                 View Profile →
               </button>
 
-              {isReceive && (
-                <div className="flex gap-2 ml-2">
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      try {
-                        const { generateBillPDF } = await import('../lib/billUtils');
-                        const doc = generateBillPDF(transaction);
-                        doc.save(`Bill_${transaction.profiles?.name || 'Customer'}_${transaction.id.substring(0,6)}.pdf`);
-                      } catch (err) {
-                        console.error(err);
-                        window.alert('❌ Failed to download Bill');
-                      }
-                    }}
-                    className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-[10px] bg-white border border-borderBlue text-navyDark hover:bg-bgPage transition-colors"
-                    title="Download Bill as PDF"
-                  >
-                    <Download className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      try {
-                        const { sendBillToTelegram } = await import('../lib/billUtils');
-                        e.target.disabled = true;
-                        e.target.innerHTML = 'Sending...';
-                        await sendBillToTelegram(transaction);
-                        window.alert('✅ Bill successfully sent to Telegram!');
-                      } catch (err) {
-                        console.error(err);
-                        window.alert('❌ Failed to send Bill ' + err.message);
-                      } finally {
-                        e.target.disabled = false;
-                        e.target.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"></path></svg><span class="text-[13px] font-bold whitespace-nowrap ml-2">Telegram</span>`;
-                      }
-                    }}
-                    className="flex-[2] flex items-center justify-center space-x-2 px-4 py-2 rounded-[10px] bg-receiveBg border border-receive/30 text-receive hover:bg-receive hover:text-white transition-colors"
-                    title="Generate & Send Bill to Telegram"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    <span className="text-[13px] font-bold whitespace-nowrap">Telegram</span>
-                  </button>
-                </div>
-              )}
+              <div className="flex gap-2 ml-2 w-full">
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      const { generateBillPDF } = await import('../lib/billUtils');
+                      const doc = generateBillPDF(transaction);
+                      doc.save(`Bill_${transaction.profiles?.name || 'Customer'}_${transaction.id.substring(0,6)}.pdf`);
+                    } catch (err) {
+                      console.error(err);
+                      window.alert('❌ Failed to download Bill');
+                    }
+                  }}
+                  className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-[10px] bg-white border border-borderBlue text-navyDark hover:bg-bgPage transition-colors"
+                  title="Download Bill as PDF"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      const { sendBillToTelegram } = await import('../lib/billUtils');
+                      e.target.disabled = true;
+                      e.target.innerHTML = 'Sending...';
+                      await sendBillToTelegram(transaction);
+                      window.alert('✅ Bill successfully sent to Telegram!');
+                    } catch (err) {
+                      console.error(err);
+                      window.alert('❌ Failed to send Bill ' + err.message);
+                    } finally {
+                      e.target.disabled = false;
+                      e.target.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"></path></svg><span class="text-[13px] font-bold whitespace-nowrap ml-2">Telegram</span>`;
+                    }
+                  }}
+                  className={`flex-[2] flex items-center justify-center space-x-2 px-4 py-2 rounded-[10px] border transition-colors ${
+                    isReceive 
+                      ? 'bg-receiveBg border-receive/30 text-receive hover:bg-receive hover:text-white' 
+                      : 'bg-giveBg border-give/30 text-give hover:bg-give hover:text-white'
+                  }`}
+                  title="Generate & Send Bill to Telegram"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span className="text-[13px] font-bold whitespace-nowrap">Telegram</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
