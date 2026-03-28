@@ -207,15 +207,15 @@ export default function TransactionCard({ transaction, variant = 'full', isTrash
     setLoadingHistory(true);
     const { data: allT } = await supabase
       .from('transactions')
-      .select('type, amount, transaction_at')
+      .select('type, amount, transaction_at, profiles(interest_rate, interest_freq)')
       .eq('profile_id', transaction.profile_id)
       .order('transaction_at', { ascending: false });
       
     if (allT) {
       setHistory(allT.slice(0, 5));
-      const { data: configData } = await supabase.from('interest_config').select('*').limit(1).maybeSingle();
       
-      const { principal, interest, total } = calculateInterest(allT, configData);
+      const profileInfo = allT[0]?.profiles || {};
+      const { principal, interest, total } = calculateInterest(allT, profileInfo.interest_rate, profileInfo.interest_freq);
       setBalance(total);
       setInterestAccrued(interest);
     }

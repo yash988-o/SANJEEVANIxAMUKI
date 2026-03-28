@@ -1,9 +1,29 @@
-import React from 'react';
-import { Phone } from 'lucide-react';
+import React, { useState } from 'react';
+import { Phone, Settings, X, Loader2 } from 'lucide-react';
 import { calculateInterest } from '../lib/interestUtils';
+import { supabase } from '../lib/supabaseClient';
 
-export default function ProfileHeader({ profile, transactions, interestConfig }) {
+export default function ProfileHeader({ profile, transactions, onProfileUpdate }) {
+  const [showSettings, setShowSettings] = useState(false);
+  const [irate, setIrate] = useState(profile?.interest_rate || '');
+  const [ifreq, setIfreq] = useState(profile?.interest_freq || 'monthly');
+  const [saving, setSaving] = useState(false);
+
   if (!profile) return null;
+
+  const handleSaveInterest = async () => {
+    setSaving(true);
+    const { error } = await supabase.from('profiles').update({
+       interest_rate: irate ? Number(irate) : null,
+       interest_freq: ifreq
+    }).eq('id', profile.id);
+    
+    if (!error && onProfileUpdate) {
+      await onProfileUpdate();
+    }
+    setSaving(false);
+    setShowSettings(false);
+  };
 
   let totalGiven = 0;
   let totalReceived = 0;
@@ -14,12 +34,18 @@ export default function ProfileHeader({ profile, transactions, interestConfig })
     if (t.type === 'receive') totalReceived += Number(t.amount);
   });
 
-  const { principal, interest, total } = calculateInterest(activeTx, interestConfig);
+  const { principal, interest, total } = calculateInterest(activeTx, profile.interest_rate, profile.interest_freq);
 
   return (
-    <div className="flex flex-col space-y-4 mb-6">
-      {/* Header Card */}
-      <div className="bg-white border border-borderBlue rounded-[16px] p-5 flex flex-col items-center text-center">
+    <div className="flex flex-col space-y-4 mb-6 relative">
+      <div className="bg-white border border-borderBlue rounded-[16px] p-5 flex flex-col items-center text-center relative">
+        <button 
+          onClick={() => setShowSettings(!showSettings)}
+          className="absolute top-4 right-4 p-2 bg-gray-50 text-gray-400 hover:text-royal hover:bg-royal/10 rounded-full transition-colors"
+          title="Configure Interest"
+        >
+          <Settings className="w-5 h-5" />
+        </button>
         <div className="w-[60px] h-[60px] bg-royal rounded-full flex items-center justify-center text-white font-bold text-[24px] mb-3">
           {profile.name?.charAt(0).toUpperCase()}
         </div>
@@ -44,6 +70,45 @@ export default function ProfileHeader({ profile, transactions, interestConfig })
            </div>
         )}
       </div>
+
+      {showSettings && (
+        <div className="bg-white border border-borderBlue rounded-[16px] p-5 animate-fade-in shadow-sm">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-bold text-[16px] text-navyDark">Interest Settings</h3>
+            <button onClick={() => setShowSettings(false)} className="text-muted hover:text-navyDark">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div>
+              <label className="block text-[12px] font-bold text-navyDark mb-1">Rate (%)</label>
+              <input 
+                type="number" step="0.1" value={irate} onChange={(e) => setIrate(e.target.value)} 
+                className="w-full h-10 px-3 flex items-center rounded-[8px] border border-borderBlue focus:border-royal outline-none text-[14px]"
+                placeholder="e.g. 1.5"
+              />
+            </div>
+            <div>
+              <label className="block text-[12px] font-bold text-navyDark mb-1">Frequency</label>
+              <select 
+                value={ifreq} onChange={(e) => setIfreq(e.target.value)}
+                className="w-full h-10 px-3 bg-white flex items-center rounded-[8px] border border-borderBlue focus:border-royal outline-none text-[14px]"
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+          </div>
+          <button 
+            onClick={handleSaveInterest} disabled={saving}
+            className="w-full h-10 bg-royal hover:bg-royalDark text-white font-bold rounded-[8px] transition-colors flex items-center justify-center disabled:opacity-70"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Interest Config'}
+          </button>
+        </div>
+      )}
 
       {/* Summary Row */}
       <div className="grid grid-cols-2 gap-3">

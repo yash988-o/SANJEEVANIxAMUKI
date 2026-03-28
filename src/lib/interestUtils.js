@@ -1,11 +1,11 @@
-export const calculateInterest = (transactions, config) => {
-  if (!config || !config.rate || !transactions || transactions.length === 0) {
+export const calculateInterest = (transactions, rateVal, freqVal) => {
+  if (!rateVal || !transactions || transactions.length === 0) {
     const bal = calculateRawBalance(transactions);
     return { principal: bal, interest: 0, total: bal };
   }
 
-  const rate = Number(config.rate);
-  const freq = config.frequency || 'monthly'; // 'monthly', 'yearly', 'daily'
+  const rate = Number(rateVal);
+  const freq = (freqVal || 'monthly').toLowerCase(); // 'monthly', 'yearly', 'daily', 'weekly'
 
   // filter out deleted/uncleared if any, but assume input is clean
   const validTx = transactions.filter(t => !t.is_deleted);
@@ -27,6 +27,7 @@ export const calculateInterest = (transactions, config) => {
       if (freq === 'monthly') interestPeriod = diffDays / 30.416; // approx month length
       else if (freq === 'yearly') interestPeriod = diffDays / 365;
       else if (freq === 'daily') interestPeriod = diffDays;
+      else if (freq === 'weekly') interestPeriod = diffDays / 7;
 
       const accInterest = calcAmount * (rate / 100) * interestPeriod;
       
@@ -51,6 +52,7 @@ export const calculateInterest = (transactions, config) => {
     if (freq === 'monthly') interestPeriod = diffDays / 30.416;
     else if (freq === 'yearly') interestPeriod = diffDays / 365;
     else if (freq === 'daily') interestPeriod = diffDays;
+    else if (freq === 'weekly') interestPeriod = diffDays / 7;
 
     const accInterest = calcAmount * (rate / 100) * interestPeriod;
     totalInterest += balance > 0 ? accInterest : -accInterest;
