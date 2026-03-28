@@ -25,6 +25,7 @@ export default function RangeSearch() {
         .select('*, profiles(name, mobile)')
         .gte('transaction_at', new Date(rangeStart).toISOString())
         .lte('transaction_at', new Date(rangeEnd + 'T23:59:59').toISOString())
+        .eq('is_deleted', false)
         .order('transaction_at', { ascending: false });
 
       if (error) throw error;

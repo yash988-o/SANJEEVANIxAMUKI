@@ -13,6 +13,7 @@ export default function History() {
   const [sortType, setSortType] = useState('date_desc'); // date_desc, date_asc, added_desc
   const [statusFilter, setStatusFilter] = useState('all'); // all, pending, cleared
   const [typeFilter, setTypeFilter] = useState('all'); // all, give, receive
+  const [categoryFilter, setCategoryFilter] = useState('all'); // all, Standard, Committee, Lucky Draw
   const [dateFilter, setDateFilter] = useState(''); // YYYY-MM-DD
   const [allLoaded, setAllLoaded] = useState(false);
   const [page, setPage] = useState(0);
@@ -26,7 +27,7 @@ export default function History() {
       fetchData(true);
     }, 300);
     return () => clearTimeout(delayDebounceFn);
-  }, [query, sortType, statusFilter, typeFilter, dateFilter]);
+  }, [query, sortType, statusFilter, typeFilter, dateFilter, categoryFilter]);
 
   const fetchData = async (reset = false) => {
     if (reset) {
@@ -53,7 +54,7 @@ export default function History() {
         .from('profiles')
         .select(`
           id, name, mobile, age, gender, created_at,
-          transactions(id, amount, type, transaction_at, is_cleared, created_at)
+          transactions(id, amount, type, transaction_at, is_cleared, created_at, is_deleted, category)
         `)
         .or(`name.ilike.%${query}%,mobile.ilike.%${query}%`)
         .range(from, to);
@@ -62,9 +63,11 @@ export default function History() {
         // Filter search results locally
         const processed = data.map(p => {
           let tx = p.transactions || [];
+          tx = tx.filter(t => !t.is_deleted);
           if (statusFilter === 'pending') tx = tx.filter(t => !t.is_cleared);
           if (statusFilter === 'cleared') tx = tx.filter(t => t.is_cleared);
           if (typeFilter !== 'all') tx = tx.filter(t => t.type === typeFilter);
+          if (categoryFilter !== 'all') tx = tx.filter(t => t.category === categoryFilter);
           if (dateFilter) {
             const start = new Date(dateFilter).getTime();
             const end = start + 86400000; // +1 day ms
@@ -74,7 +77,7 @@ export default function History() {
             });
           }
           return { ...p, transactions: tx };
-        }).filter(p => statusFilter === 'all' && typeFilter === 'all' && !dateFilter ? p.transactions.length > 0 || true : p.transactions.length > 0);
+        }).filter(p => statusFilter === 'all' && typeFilter === 'all' && categoryFilter === 'all' && !dateFilter ? p.transactions.length > 0 || true : p.transactions.length > 0);
 
         if (reset) setTransactions(processed);
         else setTransactions(prev => [...prev, ...processed]);
@@ -86,11 +89,13 @@ export default function History() {
       // Normal Mode: Fetch from Transactions
       let q = supabase
         .from('transactions')
-        .select('*, profiles!inner(name, mobile, age, gender)', { count: 'exact' });
+        .select('*, profiles!inner(name, mobile, age, gender)', { count: 'exact' })
+        .eq('is_deleted', false);
 
       if (statusFilter === 'pending') q = q.is('is_cleared', false);
       if (statusFilter === 'cleared') q = q.is('is_cleared', true);
       if (typeFilter !== 'all') q = q.eq('type', typeFilter);
+      if (categoryFilter !== 'all') q = q.eq('category', categoryFilter);
       if (dateFilter) {
          const start = new Date(dateFilter);
          const end = new Date(dateFilter);
@@ -199,6 +204,21 @@ export default function History() {
                 <option value="all">All Types</option>
                 <option value="receive">Deposit (Receive)</option>
                 <option value="give">Withdraw (Give)</option>
+              </select>
+              <ArrowUpDown className="w-4 h-4 text-navyDark absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+
+          <div className="relative flex-1 sm:max-w-[200px]">
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="w-full h-12 pl-4 pr-10 bg-transparent border border-borderBlue rounded-[10px] text-navyDark text-[14px] font-bold outline-none focus:border-royal focus:ring-1 focus:ring-royal appearance-none cursor-pointer hover:bg-white/30 transition-colors"
+              >
+                <option value="all">All Categories</option>
+                <option value="Standard">Standard</option>
+                <option value="Committee">Committee</option>
+                <option value="Society">Society</option>
+                <option value="Lucky Draw">Lucky Draw</option>
               </select>
               <ArrowUpDown className="w-4 h-4 text-navyDark absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>

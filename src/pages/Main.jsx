@@ -11,6 +11,8 @@ export default function Main() {
   const [gender, setGender] = useState('');
   const [amount, setAmount] = useState('');
   const [type, setType] = useState('receive');
+  const [paymentMode, setPaymentMode] = useState('Cash');
+  const [category, setCategory] = useState('Standard');
   const [datetime, setDatetime] = useState('');
   const [note, setNote] = useState('');
   const [selectedProfileId, setSelectedProfileId] = useState(null);
@@ -72,6 +74,7 @@ export default function Main() {
         *,
         profiles ( name, mobile, age, gender )
       `)
+      .eq('is_deleted', false)
       .order('transaction_at', { ascending: false })
       .limit(20);
       
@@ -141,6 +144,8 @@ export default function Main() {
           type,
           amount: Number(amount),
           note: note.trim() || null,
+          payment_mode: paymentMode,
+          category,
           transaction_at: datetime ? new Date(datetime).toISOString() : new Date().toISOString()
         });
 
@@ -156,6 +161,8 @@ export default function Main() {
       setAmount('');
       setNote('');
       setType('receive');
+      setPaymentMode('Cash');
+      setCategory('Standard');
       setSelectedProfileId(null);
       const now = new Date();
       now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -292,27 +299,71 @@ export default function Main() {
             </div>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[13px] font-bold text-navyDark mb-1">Transaction Type</label>
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setType('give')}
+                  className={`flex-1 flex items-center justify-center min-h-[56px] rounded-[12px] border transition-all active:scale-95 ${
+                    type === 'give' ? 'bg-give text-white font-bold border-give ring-2 ring-royal ring-offset-2' : 'bg-giveBg text-give border-transparent hover:border-give/30 outline-none'
+                  }`}
+                >
+                  ↑ Withdraw / Give
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setType('receive')}
+                  className={`flex-1 flex items-center justify-center min-h-[56px] rounded-[12px] border transition-all active:scale-95 ${
+                    type === 'receive' ? 'bg-receive text-white font-bold border-receive ring-2 ring-royal ring-offset-2' : 'bg-receiveBg text-receive border-transparent hover:border-receive/30 outline-none'
+                  }`}
+                >
+                  ↓ Deposit / Receive
+                </button>
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-[13px] font-bold text-navyDark mb-1">Payment Mode</label>
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMode('Cash')}
+                  className={`flex-1 flex items-center justify-center min-h-[56px] rounded-[12px] border transition-all active:scale-95 ${
+                    paymentMode === 'Cash' ? 'bg-navyDark text-white font-bold border-navyDark ring-2 ring-royal ring-offset-2' : 'bg-bgPage text-navyDark border-transparent hover:border-navyDark/30 outline-none'
+                  }`}
+                >
+                  💵 Cash
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMode('UPI')}
+                  className={`flex-1 flex items-center justify-center min-h-[56px] rounded-[12px] border transition-all active:scale-95 ${
+                    paymentMode === 'UPI' ? 'bg-royal text-white font-bold border-royal ring-2 ring-royal ring-offset-2' : 'bg-royal/10 text-royal border-transparent hover:border-royal/30 outline-none'
+                  }`}
+                >
+                  📱 UPI
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div>
-            <label className="block text-[13px] font-bold text-navyDark mb-1">Transaction Type</label>
-            <div className="flex space-x-3">
-              <button
-                type="button"
-                onClick={() => setType('give')}
-                className={`flex-1 flex items-center justify-center min-h-[56px] rounded-[12px] border transition-all active:scale-95 ${
-                  type === 'give' ? 'bg-give text-white font-bold border-give ring-2 ring-royal ring-offset-2' : 'bg-giveBg text-give border-transparent hover:border-give/30 outline-none'
-                }`}
-              >
-                ↑ Withdraw / Give
-              </button>
-              <button
-                type="button"
-                onClick={() => setType('receive')}
-                className={`flex-1 flex items-center justify-center min-h-[56px] rounded-[12px] border transition-all active:scale-95 ${
-                  type === 'receive' ? 'bg-receive text-white font-bold border-receive ring-2 ring-royal ring-offset-2' : 'bg-receiveBg text-receive border-transparent hover:border-receive/30 outline-none'
-                }`}
-              >
-                ↓ Deposit / Receive
-              </button>
+            <label className="block text-[13px] font-bold text-navyDark mb-1">Category</label>
+            <div className="grid grid-cols-2 sm:flex space-y-2 sm:space-y-0 sm:space-x-2 gap-2 sm:gap-0">
+              {['Standard', 'Committee', 'Society', 'Lucky Draw'].map(cat => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCategory(cat)}
+                  className={`flex-1 flex items-center justify-center min-h-[44px] rounded-[10px] border transition-all active:scale-95 text-[12px] whitespace-nowrap px-1 ${
+                    category === cat ? 'bg-royal/10 text-royal font-bold border-royal ring-1 ring-royal' : 'bg-white text-muted border-borderBlue hover:border-royal/30 hover:bg-bgPage outline-none'
+                  }`}
+                >
+                  {cat === 'Standard' ? '🏷️ ' : cat === 'Committee' ? '👥 ' : cat === 'Society' ? '🏘️ ' : '🎫 '} {cat}
+                </button>
+              ))}
             </div>
           </div>
 

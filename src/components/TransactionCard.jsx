@@ -1,17 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, Calendar, Clock, MessageSquare, ChevronDown, CheckCircle2, Download } from 'lucide-react';
+import { Phone, Calendar, Clock, MessageSquare, ChevronDown, CheckCircle2, Download, Trash2, RefreshCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../context/AuthContext';
 import ConfirmModal from './ConfirmModal';
+import { calculateInterest } from '../lib/interestUtils';
 
-export default function TransactionCard({ transaction, variant = 'full' }) {
+export default function TransactionCard({ transaction, variant = 'full', isTrashView = false, onRestore }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [expanded, setExpanded] = useState(false);
   const [history, setHistory] = useState([]);
   const [balance, setBalance] = useState(0);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [isCleared, setIsCleared] = useState(transaction.is_cleared || false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isDeleted, setIsDeleted] = useState(transaction.is_deleted || false);
+  const [interestAccrued, setInterestAccrued] = useState(0);
 
   const toggleClear = (e) => {
     e.stopPropagation();
@@ -33,6 +38,42 @@ export default function TransactionCard({ transaction, variant = 'full' }) {
       setIsCleared(!newValue);
     }
   };
+
+  const handleSoftDelete = async (e) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this transaction? It will be moved to the Trash.")) return;
+    
+    const { error } = await supabase
+      .from('transactions')
+      .update({ 
+        is_deleted: true, 
+        deleted_at: new Date().toISOString(),
+        deleted_by: user?.id 
+      })
+      .eq('id', transaction.id);
+      
+    if (!error) setIsDeleted(true);
+  };
+
+  const handleRestoreAction = async (e) => {
+    e.stopPropagation();
+    const { error } = await supabase
+      .from('transactions')
+      .update({ 
+        is_deleted: false, 
+        deleted_at: null,
+        deleted_by: null 
+      })
+      .eq('id', transaction.id);
+      
+    if (!error) {
+      if (onRestore) onRestore(transaction.id);
+      setIsDeleted(false);
+    }
+  };
+
+  // If deleted and not in trash view, hide it
+  if (isDeleted && !isTrashView) return null;
 
   // robust parsing of date
   const tDate = new Date(transaction.transaction_at || transaction.created_at);
@@ -75,6 +116,20 @@ export default function TransactionCard({ transaction, variant = 'full' }) {
             }`}>
               {isReceive ? 'DEPOSIT' : 'WITHDRAWAL'}
             </div>
+            {transaction.payment_mode && (
+              <div className="px-2 py-[2px] rounded-full text-[10px] font-bold bg-navyDark/10 text-navyDark uppercase">
+                {transaction.payment_mode}
+              </div>
+            )}
+            {transaction.category && transaction.category !== 'Standard' && (
+              <div className={`px-2 py-[2px] rounded-full text-[10px] font-bold uppercase shrink-0 ${
+                transaction.category === 'Committee' ? 'bg-purple-100 text-purple-700' :
+                transaction.category === 'Society' ? 'bg-blue-100 text-blue-700' :
+                'bg-orange-100 text-orange-700'
+              }`}>
+                {transaction.category}
+              </div>
+            )}
           </div>
         </div>
       <ConfirmModal 
@@ -111,11 +166,18 @@ export default function TransactionCard({ transaction, variant = 'full' }) {
             {amountText}
           </div>
         </div>
-        <div className="flex justify-between items-end pl-8">
-          <div className={`px-2 py-[2px] rounded-full text-[11px] font-bold ${
-            isReceive ? 'bg-receiveBg text-receive' : 'bg-giveBg text-give'
-          }`}>
-            {isReceive ? 'DEPOSIT' : 'WITHDRAWAL'}
+        <div className="flex justify-between items-end pl-8 mt-1">
+          <div className="flex space-x-2">
+            <div className={`px-2 py-[2px] rounded-full text-[11px] font-bold ${
+              isReceive ? 'bg-receiveBg text-receive' : 'bg-giveBg text-give'
+            }`}>
+              {isReceive ? 'DEPOSIT' : 'WITHDRAWAL'}
+            </div>
+            {transaction.payment_mode && (
+              <div className="px-2 py-[2px] rounded-full text-[10px] font-bold bg-navyDark/10 text-navyDark uppercase">
+                {transaction.payment_mode}
+              </div>
+            )}
           </div>
           {transaction.note && (
              <div className="italic text-[13px] text-muted flex items-center space-x-1 max-w-[70%] text-right">
@@ -151,12 +213,11 @@ export default function TransactionCard({ transaction, variant = 'full' }) {
       
     if (allT) {
       setHistory(allT.slice(0, 5));
-      let bal = 0;
-      allT.forEach(t => {
-        if (t.type === 'receive') bal += Number(t.amount);
-        if (t.type === 'give') bal -= Number(t.amount);
-      });
-      setBalance(bal);
+      const { data: configData } = await supabase.from('interest_config').select('*').limit(1).maybeSingle();
+      
+      const { principal, interest, total } = calculateInterest(allT, configData);
+      setBalance(total);
+      setInterestAccrued(interest);
     }
     setLoadingHistory(false);
   };
@@ -206,6 +267,20 @@ export default function TransactionCard({ transaction, variant = 'full' }) {
             }`}>
               {isReceive ? 'DEPOSIT' : 'WITHDRAWAL'}
             </div>
+            {transaction.payment_mode && (
+              <div className="px-2 py-[2px] rounded-full text-[10px] font-bold bg-navyDark/10 text-navyDark uppercase hidden sm:block">
+                {transaction.payment_mode}
+              </div>
+            )}
+            {transaction.category && transaction.category !== 'Standard' && (
+              <div className={`px-2 py-[2px] rounded-full text-[10px] font-bold uppercase shrink-0 ${
+                transaction.category === 'Committee' ? 'bg-purple-100 text-purple-700' :
+                transaction.category === 'Society' ? 'bg-blue-100 text-blue-700' :
+                'bg-orange-100 text-orange-700'
+              }`}>
+                {transaction.category}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -242,16 +317,27 @@ export default function TransactionCard({ transaction, variant = 'full' }) {
               </div>
             </div>
             
-            <div className="flex items-center justify-between bg-bgPage p-3 rounded-[10px]">
-              <span className="text-[13px] font-medium text-navyDark">Current Balance</span>
-              <div className={`px-2 py-1 rounded-full text-[11px] font-bold ${
-                balance > 0 ? 'bg-receiveBg text-receive' : 
-                balance < 0 ? 'bg-giveBg text-give' : 
-                'bg-gray-200 text-gray-500'
-              }`}>
-                {balance > 0 ? `Owes ₹${Math.abs(balance).toLocaleString('en-IN')}` : 
-                 balance < 0 ? `You owe ₹${Math.abs(balance).toLocaleString('en-IN')}` : '₹0'}
+            <div className="flex flex-col bg-bgPage p-3 rounded-[10px] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] font-medium text-navyDark">Current Balance</span>
+                <div className={`px-2 py-1 rounded-full text-[11px] font-bold ${
+                  balance > 0 ? 'bg-receiveBg text-receive' : 
+                  balance < 0 ? 'bg-giveBg text-give' : 
+                  'bg-gray-200 text-gray-500'
+                }`}>
+                  {balance > 0 ? `Owes ₹${Math.abs(balance).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : 
+                   balance < 0 ? `You owe ₹${Math.abs(balance).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : '₹0'}
+                </div>
               </div>
+              
+              {Math.abs(interestAccrued) > 0 && (
+                <div className="flex justify-between items-center pt-2 border-t border-borderBlue">
+                  <span className="text-[12px] text-muted font-medium pr-2">Calculated Interest</span>
+                  <span className={`text-[12px] font-bold ${interestAccrued > 0 ? 'text-receive' : 'text-give'}`}>
+                    {interestAccrued > 0 ? '+' : '-'}₹{Math.abs(interestAccrued).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-3 mt-4">
@@ -263,51 +349,75 @@ export default function TransactionCard({ transaction, variant = 'full' }) {
                 View Profile →
               </button>
 
-              <div className="flex justify-end gap-2 w-full">
-                <button
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    try {
-                      const { generateBillPDF } = await import('../lib/billUtils');
-                      const doc = generateBillPDF(transaction);
-                      doc.save(`Bill_${transaction.profiles?.name || 'Customer'}_${transaction.id.substring(0,6)}.pdf`);
-                    } catch (err) {
-                      console.error(err);
-                      window.alert('❌ Failed to download Bill');
-                    }
-                  }}
-                  className="px-4 py-2 rounded-[10px] bg-white border border-borderBlue text-navyDark hover:bg-bgPage transition-colors flex items-center justify-center shrink-0"
-                  title="Download Bill as PDF"
-                >
-                  <Download className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    try {
-                      const { sendBillToTelegram } = await import('../lib/billUtils');
-                      e.target.disabled = true;
-                      e.target.innerHTML = 'Sending...';
-                      await sendBillToTelegram(transaction);
-                      window.alert('✅ Bill successfully sent to Telegram!');
-                    } catch (err) {
-                      console.error(err);
-                      window.alert('❌ Failed to send Bill ' + err.message);
-                    } finally {
-                      e.target.disabled = false;
-                      e.target.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"></path></svg><span class="text-[13px] font-bold whitespace-nowrap ml-2">Telegram</span>`;
-                    }
-                  }}
-                  className={`px-5 py-2 rounded-[10px] border transition-colors flex items-center justify-center space-x-2 shrink-0 ${
-                    isReceive 
-                      ? 'bg-receiveBg border-receive/30 text-receive hover:bg-receive hover:text-white' 
-                      : 'bg-giveBg border-give/30 text-give hover:bg-give hover:text-white'
-                  }`}
-                  title="Generate & Send Bill to Telegram"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  <span className="text-[13px] font-bold whitespace-nowrap">Telegram</span>
-                </button>
+              <div className="flex justify-between gap-2 w-full mt-2">
+                {isTrashView ? (
+                  <button
+                    onClick={handleRestoreAction}
+                    className="px-4 py-2 rounded-[10px] bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 transition-colors flex items-center justify-center space-x-2 w-full"
+                    title="Restore Transaction"
+                  >
+                    <RefreshCcw className="w-4 h-4" />
+                    <span className="text-[13px] font-bold">Restore</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleSoftDelete}
+                    className="px-4 py-2 rounded-[10px] bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-colors flex items-center justify-center space-x-2 shrink-0"
+                    title="Delete Transaction"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span className="text-[13px] font-bold hidden sm:inline">Delete</span>
+                  </button>
+                )}
+                
+                {!isTrashView && (
+                  <div className="flex justify-end gap-2 shrink-0">
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        try {
+                          const { generateBillPDF } = await import('../lib/billUtils');
+                          const doc = generateBillPDF(transaction);
+                          doc.save(`Bill_${transaction.profiles?.name || 'Customer'}_${transaction.id.substring(0,6)}.pdf`);
+                        } catch (err) {
+                          console.error(err);
+                          window.alert('❌ Failed to download Bill');
+                        }
+                      }}
+                      className="px-4 py-2 rounded-[10px] bg-white border border-borderBlue text-navyDark hover:bg-bgPage transition-colors flex items-center justify-center shrink-0"
+                      title="Download Bill as PDF"
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        try {
+                          const { sendBillToTelegram } = await import('../lib/billUtils');
+                          e.target.disabled = true;
+                          e.target.innerHTML = 'Sending...';
+                          await sendBillToTelegram(transaction);
+                          window.alert('✅ Bill successfully sent to Telegram!');
+                        } catch (err) {
+                          console.error(err);
+                          window.alert('❌ Failed to send Bill ' + err.message);
+                        } finally {
+                          e.target.disabled = false;
+                          e.target.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"></path></svg><span class="text-[13px] font-bold whitespace-nowrap ml-2">Telegram</span>`;
+                        }
+                      }}
+                      className={`px-5 py-2 rounded-[10px] border transition-colors flex items-center justify-center space-x-2 shrink-0 ${
+                        isReceive 
+                          ? 'bg-receiveBg border-receive/30 text-receive hover:bg-receive hover:text-white' 
+                          : 'bg-giveBg border-give/30 text-give hover:bg-give hover:text-white'
+                      }`}
+                      title="Generate & Send Bill to Telegram"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      <span className="text-[13px] font-bold whitespace-nowrap">Telegram</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

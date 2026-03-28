@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { PenLine, BarChart2, Clock, LogOut, CalendarSearch, FileText } from 'lucide-react';
+import { PenLine, BarChart2, Clock, LogOut, CalendarSearch, FileText, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 export default function Sidebar() {
@@ -13,6 +13,7 @@ export default function Sidebar() {
     { to: '/summary', icon: BarChart2, label: 'Summary' },
     { to: '/history', icon: Clock, label: 'History' },
     { to: '/range-search', icon: CalendarSearch, label: 'Range Search' },
+    { to: '/trash', icon: Trash2, label: 'Trash' },
   ];
 
   return (

@@ -1,18 +1,20 @@
 import React from 'react';
 import { Phone } from 'lucide-react';
+import { calculateInterest } from '../lib/interestUtils';
 
-export default function ProfileHeader({ profile, transactions }) {
+export default function ProfileHeader({ profile, transactions, interestConfig }) {
   if (!profile) return null;
 
   let totalGiven = 0;
   let totalReceived = 0;
 
-  (transactions || []).filter(t => !t.is_cleared).forEach(t => {
+  const activeTx = (transactions || []).filter(t => !t.is_cleared);
+  activeTx.forEach(t => {
     if (t.type === 'give') totalGiven += Number(t.amount);
     if (t.type === 'receive') totalReceived += Number(t.amount);
   });
 
-  const balance = totalReceived - totalGiven;
+  const { principal, interest, total } = calculateInterest(activeTx, interestConfig);
 
   return (
     <div className="flex flex-col space-y-4 mb-6">
@@ -28,14 +30,19 @@ export default function ProfileHeader({ profile, transactions }) {
         </div>
         
         <div className={`text-[16px] font-bold rounded-[20px] px-3 py-[6px] ${
-          balance > 0 ? 'bg-receiveBg text-receive' :
-          balance < 0 ? 'bg-giveBg text-give' :
+          total > 0 ? 'bg-receiveBg text-receive' :
+          total < 0 ? 'bg-giveBg text-give' :
           'bg-gray-100 text-gray-500'
         }`}>
-          {balance > 0 ? `Owes you ₹${Math.abs(balance).toLocaleString('en-IN')}` :
-           balance < 0 ? `You owe ₹${Math.abs(balance).toLocaleString('en-IN')}` :
+          {total > 0 ? `Owes you ₹${Math.abs(total).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` :
+           total < 0 ? `You owe ₹${Math.abs(total).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` :
            'All settled ₹0'}
         </div>
+        {Math.abs(interest) > 0 && (
+           <div className="text-[12px] text-muted mt-2 font-medium bg-gray-50 px-2 py-1 rounded-[6px]">
+             Includes <span className="font-bold text-navyDark">₹{Math.abs(interest).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span> interest
+           </div>
+        )}
       </div>
 
       {/* Summary Row */}

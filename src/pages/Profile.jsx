@@ -10,6 +10,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [transactions, setTransactions] = useState([]);
+  const [interestConfig, setInterestConfig] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,11 +28,16 @@ export default function Profile() {
 
     if (profileData) {
       setProfile(profileData);
+      
+      const { data: configData } = await supabase.from('interest_config').select('*').limit(1).maybeSingle();
+      if (configData) setInterestConfig(configData);
+
       // Fetch Transactions
       const { data: transData } = await supabase
         .from('transactions')
         .select('*')
         .eq('profile_id', id)
+        .eq('is_deleted', false)
         .order('transaction_at', { ascending: false });
         
       if (transData) {
@@ -81,7 +87,7 @@ export default function Profile() {
         <h1 className="font-bold text-[20px] text-navyDark">Customer Profile</h1>
       </div>
 
-      <ProfileHeader profile={profile} transactions={transactions} />
+      <ProfileHeader profile={profile} transactions={transactions} interestConfig={interestConfig} />
 
       <div>
         {(() => {

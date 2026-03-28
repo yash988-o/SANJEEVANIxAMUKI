@@ -10,6 +10,7 @@ import Summary from './pages/Summary';
 import History from './pages/History';
 import Profile from './pages/Profile';
 import RangeSearch from './pages/RangeSearch';
+import Trash from './pages/Trash';
 export default function App() {
   return (
     <>
@@ -53,6 +54,14 @@ export default function App() {
           <AuthGuard>
             <Layout>
               <RangeSearch />
+            </Layout>
+          </AuthGuard>
+        } />
+
+        <Route path="/trash" element={
+          <AuthGuard>
+            <Layout>
+              <Trash />
             </Layout>
           </AuthGuard>
         } />
