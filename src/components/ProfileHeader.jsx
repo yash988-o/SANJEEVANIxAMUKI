@@ -1,13 +1,30 @@
-import React, { useState } from 'react';
-import { Phone, Settings, X, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Phone, Settings, X, Loader2, ChevronDown } from 'lucide-react';
 import { calculateInterest } from '../lib/interestUtils';
 import { supabase } from '../lib/supabaseClient';
+import { useNavigate } from 'react-router-dom';
 
 export default function ProfileHeader({ profile, transactions, onProfileUpdate }) {
+  const navigate = useNavigate();
   const [showSettings, setShowSettings] = useState(false);
   const [irate, setIrate] = useState(profile?.interest_rate || '');
   const [ifreq, setIfreq] = useState(profile?.interest_freq || 'monthly');
   const [saving, setSaving] = useState(false);
+  const [siblings, setSiblings] = useState([]);
+
+  useEffect(() => {
+    if (profile?.mobile) {
+      supabase.from('profiles')
+        .select('id, name')
+        .eq('mobile', profile.mobile)
+        .order('created_at', { ascending: true })
+        .then(({ data }) => {
+          if (data && data.length > 1) {
+            setSiblings(data);
+          }
+        });
+    }
+  }, [profile]);
 
   if (!profile) return null;
 
@@ -49,7 +66,24 @@ export default function ProfileHeader({ profile, transactions, onProfileUpdate }
         <div className="w-[60px] h-[60px] bg-royal rounded-full flex items-center justify-center text-white font-bold text-[24px] mb-3">
           {profile.name?.charAt(0).toUpperCase()}
         </div>
-        <h2 className="font-bold text-[22px] text-navyDark leading-none mb-2">{profile.name}</h2>
+        
+        {siblings.length > 1 ? (
+          <div className="relative mb-2 flex items-center justify-center min-w-[150px]">
+            <select 
+               value={profile.id}
+               onChange={(e) => navigate(`/profile/${e.target.value}`)}
+               className="appearance-none font-bold text-[22px] text-navyDark bg-transparent pr-6 cursor-pointer outline-none focus:ring-0 text-center"
+            >
+               {siblings.map(sib => (
+                 <option key={sib.id} value={sib.id}>{sib.name}</option>
+               ))}
+            </select>
+            <ChevronDown className="w-5 h-5 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-navyDark" />
+          </div>
+        ) : (
+          <h2 className="font-bold text-[22px] text-navyDark leading-none mb-2">{profile.name}</h2>
+        )}
+
         <div className="flex items-center text-muted text-[14px] space-x-1 mb-4">
           <Phone className="w-4 h-4" />
           <span>{profile.mobile}</span>

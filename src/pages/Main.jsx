@@ -117,13 +117,16 @@ export default function Main() {
       
       // Create new profile if not selected
       if (!pid) {
-        // Check if mobile already exists
-        const { data: existing } = await supabase.from('profiles').select('id, name').eq('mobile', mobile).single();
+        // Check if exact mobile + name already exists
+        const { data: existing } = await supabase.from('profiles')
+          .select('id, name')
+          .eq('mobile', mobile)
+          .ilike('name', name.trim())
+          .limit(1)
+          .maybeSingle();
+          
         if (existing) {
           pid = existing.id;
-          if (existing.name !== name) {
-            showToast(`Mobile already registered to ${existing.name}. Transaction added to them.`, 'info');
-          }
         } else {
           const { data: newProfile, error: profileErr } = await supabase
             .from('profiles')
