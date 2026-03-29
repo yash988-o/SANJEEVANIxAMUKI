@@ -34,8 +34,8 @@ export const generateBillPDF = (transaction) => {
   
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text('SHOP NO-23, VISHWADEEP BUILDING PLOT NO-4', 105, 30, { align: 'center' });
-  doc.text('DISTRICT CENTER JANAKPURI Delhi-110058', 105, 34, { align: 'center' });
+  doc.text('B-327, Karan Vihar, New R.K. Memorial Public School Opp.', 105, 30, { align: 'center' });
+  doc.text('Rohini, Sector -20 Delhi-110086', 105, 34, { align: 'center' });
   doc.text('Telephone: 011-47015083, 9625026089', 105, 38, { align: 'center' });
   doc.text('Email-id: sanjeevani@gmail.com', 105, 42, { align: 'center' });
   
@@ -71,16 +71,13 @@ export const generateBillPDF = (transaction) => {
     bodyStyles: { fontSize: 8, halign: 'center' },
     columnStyles: { 
       1: { halign: 'left' },
-      6: { halign: 'right' }
+      3: { halign: 'right' }
     },
-    head: [['S.N.', 'Description of Goods', 'HSN/SAC', 'Qty.', 'Unit.', 'Price', 'Amount(Rs.)']],
+    head: [['S.N.', 'Discription in bill', 'Price', 'Amount(Rs.)']],
     body: [
       [
         '1',
         transaction.note || (transaction.type === 'receive' ? 'Deposit Amount' : 'Withdrawal Amount'),
-        '-',
-        '1.000',
-        'Pcs.',
         Number(transaction.amount).toFixed(2),
         Number(transaction.amount).toFixed(2)
       ]
@@ -111,20 +108,13 @@ export const generateBillPDF = (transaction) => {
   doc.text('Terms & Conditions', 12, termY + 4);
   doc.text('1) Goods once sold will not be taken back / Replaced / Exchanged.', 12, termY + 8, { maxWidth: 65 });
   doc.text('2) Warranty cases in case of broken seal / burnt / physical damage will not be covered.', 12, termY + 15, { maxWidth: 65 });
-  
-  // Bank Info
-  doc.line(80, termY, 80, termY + 26);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Bank Detail :', 82, termY + 4);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Bank Name     : HDFC BANK', 82, termY + 8);
-  doc.text('Branch Name   : MAIN BRANCH', 82, termY + 12);
-  doc.text('A/c No.             : 5020000000', 82, termY + 16);
-  doc.text('IFSC CODE     : HDFC0000001', 82, termY + 20);
 
   // Signature
   doc.line(140, termY, 140, termY + 26);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
   doc.text('FOR SANJEEVANI CLINIC', 142, termY + 4);
+  doc.setFont('helvetica', 'normal');
   doc.text('Authorised Signatory', 142, termY + 24);
 
   return doc;

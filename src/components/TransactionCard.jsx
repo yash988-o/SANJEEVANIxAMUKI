@@ -461,7 +461,7 @@ export default function TransactionCard({ transaction, variant = 'full', isTrash
                       </div>
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-navyDark mb-1">Note</label>
+                      <label className="block text-[11px] font-bold text-navyDark mb-1">Bill Description</label>
                       <input type="text" value={editData.note} onChange={e => setEditData({...editData, note: e.target.value})} className="w-full h-9 px-2 rounded-[6px] border border-borderBlue focus:border-royal outline-none text-[13px]" />
                     </div>
 

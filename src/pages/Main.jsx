@@ -386,7 +386,7 @@ export default function Main() {
 
           <div>
             <div className="flex justify-between items-end mb-1">
-              <label className="block text-[13px] font-bold text-navyDark">Note (optional)</label>
+              <label className="block text-[13px] font-bold text-navyDark">Bill Description (Prints on PDF)</label>
               <span className="text-[12px] text-muted">{note.length}/100</span>
             </div>
             <input
@@ -395,7 +395,7 @@ export default function Main() {
               value={note}
               onChange={(e) => setNote(e.target.value)}
               className="w-full h-12 px-4 rounded-[10px] border border-borderBlue focus:border-royal focus:ring-1 focus:ring-royal outline-none text-[15px]"
-              placeholder="e.g., rent, emergency, travel..."
+              placeholder="e.g., medical test, consultation, etc..."
             />
           </div>
 
