@@ -345,7 +345,7 @@ export default function TransactionCard({ transaction, variant = 'full', isTrash
       {/* Expanded Section */}
       <div 
         className={`transition-all duration-300 overflow-hidden flex flex-col ${expanded ? 'opacity-100 mt-4 pt-4 border-t border-borderBlue' : 'max-h-0 opacity-0 mt-0 pt-0 border-transparent'}`}
-        style={{ maxHeight: expanded ? '500px' : '0px' }}
+        style={{ maxHeight: expanded ? '2000px' : '0px' }}
       >
         {loadingHistory ? (
           <div className="text-center text-muted text-[13px] py-4">Loading history...</div>
@@ -404,9 +404,14 @@ export default function TransactionCard({ transaction, variant = 'full', isTrash
                   <div className="bg-white p-3 border border-borderBlue rounded-[10px] space-y-3 w-full relative" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-between items-center border-b pb-2 mb-2">
                        <div className="font-bold text-navyDark text-[14px]">Edit Transaction</div>
-                       <button onClick={(e) => { e.stopPropagation(); setIsEditing(false); }} className="text-muted hover:text-navyDark" title="Close">
-                         <X className="w-5 h-5" />
-                       </button>
+                       <div className="flex items-center space-x-3">
+                         <button onClick={handleSaveEdit} disabled={savingEdit} className="h-7 px-3 bg-royal text-white font-bold rounded-[6px] flex items-center justify-center text-[11px] hover:bg-royalDark transition-colors shadow-sm">
+                           {savingEdit ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Save'}
+                         </button>
+                         <button onClick={(e) => { e.stopPropagation(); setIsEditing(false); }} className="text-muted hover:text-navyDark" title="Close">
+                           <X className="w-5 h-5" />
+                         </button>
+                       </div>
                     </div>
                     
                     <div className="text-[12px] font-bold text-royal bg-royal/10 px-2 py-1 rounded inline-block">Transaction Details</div>
