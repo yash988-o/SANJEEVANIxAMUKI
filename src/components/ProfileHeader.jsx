@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Phone, Settings, X, Loader2 } from 'lucide-react';
+import { Phone, Settings, X, Loader2, Edit3 } from 'lucide-react';
 import { calculateInterest } from '../lib/interestUtils';
 import { supabase } from '../lib/supabaseClient';
 
@@ -8,6 +8,16 @@ export default function ProfileHeader({ profile, transactions, onProfileUpdate }
   const [irate, setIrate] = useState(profile?.interest_rate || '');
   const [ifreq, setIfreq] = useState(profile?.interest_freq || 'monthly');
   const [saving, setSaving] = useState(false);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editData, setEditData] = useState({
+    name: profile?.name || '',
+    mobile: profile?.mobile || '',
+    age: profile?.age || '',
+    gender: profile?.gender || '',
+    guardian: profile?.guardian || ''
+  });
 
   if (!profile) return null;
 
@@ -25,6 +35,23 @@ export default function ProfileHeader({ profile, transactions, onProfileUpdate }
     setShowSettings(false);
   };
 
+  const handleSaveEdit = async () => {
+    setSavingEdit(true);
+    const { error } = await supabase.from('profiles').update({
+       name: editData.name,
+       mobile: editData.mobile,
+       age: editData.age ? Number(editData.age) : null,
+       gender: editData.gender || null,
+       guardian: editData.guardian || null
+    }).eq('id', profile.id);
+    
+    if (!error && onProfileUpdate) {
+      await onProfileUpdate();
+    }
+    setSavingEdit(false);
+    setIsEditing(false);
+  };
+
   let totalGiven = 0;
   let totalReceived = 0;
 
@@ -39,25 +66,80 @@ export default function ProfileHeader({ profile, transactions, onProfileUpdate }
   return (
     <div className="flex flex-col space-y-4 mb-6 relative">
       <div className="bg-white border border-borderBlue rounded-[16px] p-5 flex flex-col items-center text-center relative">
-        <button 
-          onClick={() => setShowSettings(!showSettings)}
-          className="absolute top-4 right-4 p-2 bg-gray-50 text-gray-400 hover:text-royal hover:bg-royal/10 rounded-full transition-colors"
-          title="Configure Interest"
-        >
-          <Settings className="w-5 h-5" />
-        </button>
-        <div className="w-[60px] h-[60px] bg-royal rounded-full flex items-center justify-center text-white font-bold text-[24px] mb-3">
-          {profile.name?.charAt(0).toUpperCase()}
+        <div className="absolute top-4 right-4 flex space-x-2">
+          <button 
+            onClick={() => setIsEditing(!isEditing)}
+            className={`p-2 rounded-full transition-colors ${isEditing ? 'bg-royal text-white' : 'bg-gray-50 text-gray-400 hover:text-royal hover:bg-royal/10'}`}
+            title="Edit Profile"
+          >
+            <Edit3 className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={() => setShowSettings(!showSettings)}
+            className={`p-2 rounded-full transition-colors ${showSettings ? 'bg-royal text-white' : 'bg-gray-50 text-gray-400 hover:text-royal hover:bg-royal/10'}`}
+            title="Configure Interest"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
         </div>
-        
-        <h2 className="font-bold text-[22px] text-navyDark leading-none mb-2">{profile.name}</h2>
 
-        <div className="flex items-center text-muted text-[14px] space-x-1 mb-4">
-          <Phone className="w-4 h-4" />
-          <span>{profile.mobile}</span>
-        </div>
+        {isEditing ? (
+          <div className="w-full text-left mt-10 space-y-3 px-2">
+            <div>
+              <label className="block text-[12px] font-bold text-navyDark mb-1">Name</label>
+              <input type="text" value={editData.name} onChange={e => setEditData({...editData, name: e.target.value})} className="w-full h-10 px-3 rounded-[8px] border border-borderBlue focus:border-royal outline-none text-[14px]" />
+            </div>
+            <div>
+              <label className="block text-[12px] font-bold text-navyDark mb-1">Mobile</label>
+              <input type="text" value={editData.mobile} onChange={e => setEditData({...editData, mobile: e.target.value})} className="w-full h-10 px-3 rounded-[8px] border border-borderBlue focus:border-royal outline-none text-[14px]" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[12px] font-bold text-navyDark mb-1">Age</label>
+                <input type="number" value={editData.age} onChange={e => setEditData({...editData, age: e.target.value})} className="w-full h-10 px-3 rounded-[8px] border border-borderBlue focus:border-royal outline-none text-[14px]" />
+              </div>
+              <div>
+                <label className="block text-[12px] font-bold text-navyDark mb-1">Gender</label>
+                <select value={editData.gender} onChange={e => setEditData({...editData, gender: e.target.value})} className="w-full h-10 px-3 bg-white rounded-[8px] border border-borderBlue focus:border-royal outline-none text-[14px]">
+                  <option value="">Select</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-[12px] font-bold text-navyDark mb-1">Guardian</label>
+              <input type="text" value={editData.guardian} onChange={e => setEditData({...editData, guardian: e.target.value})} className="w-full h-10 px-3 rounded-[8px] border border-borderBlue focus:border-royal outline-none text-[14px]" placeholder="e.g. Father: Ramesh" />
+            </div>
+            <div className="flex space-x-2 pt-2">
+              <button onClick={() => setIsEditing(false)} className="flex-1 h-10 bg-gray-100 text-gray-600 font-bold rounded-[8px]">Cancel</button>
+              <button onClick={handleSaveEdit} disabled={savingEdit} className="flex-1 h-10 bg-royal text-white font-bold rounded-[8px] flex items-center justify-center">
+                {savingEdit ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Info'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="w-[60px] h-[60px] bg-royal rounded-full flex items-center justify-center text-white font-bold text-[24px] mb-3 mt-4">
+              {profile.name?.charAt(0).toUpperCase()}
+            </div>
+            
+            <h2 className="font-bold text-[22px] text-navyDark leading-none mb-2">{profile.name}</h2>
+
+            <div className="flex items-center text-muted text-[14px] space-x-1 mb-3">
+              <Phone className="w-4 h-4" />
+              <span>{profile.mobile}</span>
+            </div>
+
+            {profile.guardian && (
+              <div className="text-[13px] text-muted mb-4 mt-[-6px]">
+                Guardian: <span className="font-bold text-navyDark">{profile.guardian}</span>
+              </div>
+            )}
+
         
-        <div className={`text-[16px] font-bold rounded-[20px] px-3 py-[6px] ${
+            <div className={`text-[16px] font-bold rounded-[20px] px-3 py-[6px] ${
           total > 0 ? 'bg-receiveBg text-receive' :
           total < 0 ? 'bg-giveBg text-give' :
           'bg-gray-100 text-gray-500'
@@ -66,10 +148,12 @@ export default function ProfileHeader({ profile, transactions, onProfileUpdate }
            total < 0 ? `You owe ₹${Math.abs(total).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` :
            'All settled ₹0'}
         </div>
-        {Math.abs(interest) > 0 && (
-           <div className="text-[12px] text-muted mt-2 font-medium bg-gray-50 px-2 py-1 rounded-[6px]">
-             Includes <span className="font-bold text-navyDark">₹{Math.abs(interest).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span> interest
-           </div>
+            {Math.abs(interest) > 0 && (
+               <div className="text-[12px] text-muted mt-2 font-medium bg-gray-50 px-2 py-1 rounded-[6px]">
+                 Includes <span className="font-bold text-navyDark">₹{Math.abs(interest).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span> interest
+               </div>
+            )}
+          </>
         )}
       </div>
 

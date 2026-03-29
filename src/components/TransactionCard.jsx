@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, Calendar, Clock, MessageSquare, ChevronDown, CheckCircle2, Download, Trash2, RefreshCcw } from 'lucide-react';
+import { Phone, Calendar, Clock, MessageSquare, ChevronDown, CheckCircle2, Download, Trash2, RefreshCcw, Edit3, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
@@ -17,6 +17,42 @@ export default function TransactionCard({ transaction, variant = 'full', isTrash
   const [showConfirm, setShowConfirm] = useState(false);
   const [isDeleted, setIsDeleted] = useState(transaction.is_deleted || false);
   const [interestAccrued, setInterestAccrued] = useState(0);
+
+  const tDateInitial = new Date(transaction.transaction_at || transaction.created_at);
+  const tzOffset = tDateInitial.getTimezoneOffset() * 60000;
+  const localIsoString = new Date(tDateInitial - tzOffset).toISOString().slice(0, 16);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editData, setEditData] = useState({
+    amount: transaction.amount || '',
+    type: transaction.type || 'receive',
+    note: transaction.note || '',
+    payment_mode: transaction.payment_mode || 'Cash',
+    category: transaction.category || 'Standard',
+    transaction_at: localIsoString
+  });
+
+  const handleSaveEdit = async (e) => {
+    e.stopPropagation();
+    setSavingEdit(true);
+    const { error } = await supabase.from('transactions').update({
+      amount: Number(editData.amount),
+      type: editData.type,
+      note: editData.note || null,
+      payment_mode: editData.payment_mode,
+      category: editData.category,
+      transaction_at: new Date(editData.transaction_at).toISOString()
+    }).eq('id', transaction.id);
+    
+    if (!error) {
+      window.location.reload();
+    } else {
+      console.error(error);
+      alert("Error updating transaction");
+    }
+    setSavingEdit(false);
+  };
 
   const toggleClear = (e) => {
     e.stopPropagation();
@@ -350,7 +386,55 @@ export default function TransactionCard({ transaction, variant = 'full', isTrash
               </button>
 
               <div className="flex justify-between gap-2 w-full mt-2">
-                {isTrashView ? (
+                {isEditing ? (
+                  <div className="bg-white p-3 border border-borderBlue rounded-[10px] space-y-3 w-full" onClick={(e) => e.stopPropagation()}>
+                    <div className="font-bold text-navyDark text-[14px] mb-2 border-b pb-2">Edit Transaction</div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-navyDark mb-1">Amount</label>
+                        <input type="number" step="any" value={editData.amount} onChange={e => setEditData({...editData, amount: e.target.value})} className="w-full h-9 px-2 rounded-[6px] border border-borderBlue focus:border-royal outline-none text-[13px]" />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-navyDark mb-1">Type</label>
+                        <select value={editData.type} onChange={e => setEditData({...editData, type: e.target.value})} className="w-full h-9 px-2 bg-white rounded-[6px] border border-borderBlue focus:border-royal outline-none text-[13px]">
+                          <option value="receive">Deposit</option>
+                          <option value="give">Withdraw</option>
+                        </select>
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-[11px] font-bold text-navyDark mb-1">Date & Time</label>
+                        <input type="datetime-local" value={editData.transaction_at} onChange={e => setEditData({...editData, transaction_at: e.target.value})} className="w-full h-9 px-2 rounded-[6px] border border-borderBlue focus:border-royal outline-none text-[13px]" />
+                      </div>
+                      <div>
+                         <label className="block text-[11px] font-bold text-navyDark mb-1">Payment</label>
+                         <select value={editData.payment_mode} onChange={e => setEditData({...editData, payment_mode: e.target.value})} className="w-full h-9 px-2 bg-white rounded-[6px] border border-borderBlue focus:border-royal outline-none text-[13px]">
+                           <option value="Cash">Cash</option>
+                           <option value="UPI">UPI</option>
+                         </select>
+                      </div>
+                      <div>
+                         <label className="block text-[11px] font-bold text-navyDark mb-1">Category</label>
+                         <select value={editData.category} onChange={e => setEditData({...editData, category: e.target.value})} className="w-full h-9 px-2 bg-white rounded-[6px] border border-borderBlue focus:border-royal outline-none text-[13px]">
+                           <option value="Standard">Standard</option>
+                           <option value="Committee">Committee</option>
+                           <option value="Society">Society</option>
+                           <option value="Lucky Draw">Lucky Draw</option>
+                         </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-navyDark mb-1">Note</label>
+                      <input type="text" value={editData.note} onChange={e => setEditData({...editData, note: e.target.value})} className="w-full h-9 px-2 rounded-[6px] border border-borderBlue focus:border-royal outline-none text-[13px]" />
+                    </div>
+                    <div className="flex space-x-2 pt-2">
+                      <button onClick={(e) => { e.stopPropagation(); setIsEditing(false); }} className="flex-1 h-9 bg-gray-100 text-gray-600 font-bold rounded-[6px] text-[13px]">Cancel</button>
+                      <button onClick={handleSaveEdit} disabled={savingEdit} className="flex-1 h-9 bg-royal text-white font-bold rounded-[6px] flex items-center justify-center text-[13px]">
+                        {savingEdit ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
+                      </button>
+                    </div>
+                  </div>
+                ) : isTrashView ? (
                   <button
                     onClick={handleRestoreAction}
                     className="px-4 py-2 rounded-[10px] bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 transition-colors flex items-center justify-center space-x-2 w-full"
@@ -359,18 +443,30 @@ export default function TransactionCard({ transaction, variant = 'full', isTrash
                     <RefreshCcw className="w-4 h-4" />
                     <span className="text-[13px] font-bold">Restore</span>
                   </button>
-                ) : (
-                  <button
-                    onClick={handleSoftDelete}
-                    className="px-4 py-2 rounded-[10px] bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-colors flex items-center justify-center space-x-2 shrink-0"
-                    title="Delete Transaction"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span className="text-[13px] font-bold hidden sm:inline">Delete</span>
-                  </button>
+                ) : null}
+                
+                {!isEditing && !isTrashView && (
+                  <div className="flex justify-start gap-2 h-9">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
+                      className="px-3 py-1 rounded-[10px] bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 transition-colors flex items-center justify-center space-x-1 shrink-0"
+                      title="Edit Transaction"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                      <span className="text-[12px] font-bold hidden sm:inline">Edit</span>
+                    </button>
+                    <button
+                      onClick={handleSoftDelete}
+                      className="px-3 py-1 rounded-[10px] bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-colors flex items-center justify-center space-x-1 shrink-0"
+                      title="Delete Transaction"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span className="text-[12px] font-bold hidden sm:inline">Delete</span>
+                    </button>
+                  </div>
                 )}
                 
-                {!isTrashView && (
+                {!isEditing && !isTrashView && (
                   <div className="flex justify-end gap-2 shrink-0">
                     <button
                       onClick={async (e) => {

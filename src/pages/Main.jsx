@@ -9,6 +9,7 @@ export default function Main() {
   const [mobile, setMobile] = useState('');
   const [age, setAge] = useState('');
   const [gender, setGender] = useState('');
+  const [guardian, setGuardian] = useState('');
   const [amount, setAmount] = useState('');
   const [type, setType] = useState('receive');
   const [paymentMode, setPaymentMode] = useState('Cash');
@@ -56,7 +57,7 @@ export default function Main() {
     const delayDebounceFn = setTimeout(async () => {
       const { data } = await supabase
         .from('profiles')
-        .select('id, name, mobile, age, gender')
+        .select('id, name, mobile, age, gender, guardian')
         .ilike('name', `%${name}%`)
         .limit(5);
 
@@ -89,6 +90,7 @@ export default function Main() {
     setMobile(profile.mobile);
     setAge(profile.age || '');
     setGender(profile.gender || '');
+    setGuardian(profile.guardian || '');
     setSelectedProfileId(profile.id);
     setShowSuggestions(false);
   };
@@ -117,17 +119,20 @@ export default function Main() {
       
       // Create new profile if not selected
       if (!pid) {
-        // Check if mobile already exists
-        const { data: existing } = await supabase.from('profiles').select('id, name').eq('mobile', mobile).single();
+        // Check if matching mobile and name exists
+        const { data: existing } = await supabase.from('profiles')
+          .select('id, name')
+          .eq('mobile', mobile)
+          .ilike('name', name.trim())
+          .limit(1)
+          .maybeSingle();
+
         if (existing) {
           pid = existing.id;
-          if (existing.name !== name) {
-            showToast(`Mobile already registered to ${existing.name}. Transaction added to them.`, 'info');
-          }
         } else {
           const { data: newProfile, error: profileErr } = await supabase
             .from('profiles')
-            .insert({ name: name.trim(), mobile: mobile.trim(), age: age ? Number(age) : null, gender: gender || null })
+            .insert({ name: name.trim(), mobile: mobile.trim(), age: age ? Number(age) : null, gender: gender || null, guardian: guardian.trim() || null })
             .select('id')
             .single();
             
@@ -158,6 +163,7 @@ export default function Main() {
       setMobile('');
       setAge('');
       setGender('');
+      setGuardian('');
       setAmount('');
       setNote('');
       setType('receive');
@@ -265,6 +271,17 @@ export default function Main() {
                 <option value="Other">Other</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-[13px] font-bold text-navyDark mb-1">Guardian (Father/Mother)</label>
+            <input
+              type="text"
+              value={guardian}
+              onChange={(e) => setGuardian(e.target.value)}
+              className="w-full h-12 px-4 rounded-[10px] border border-borderBlue focus:border-royal focus:ring-1 focus:ring-royal outline-none text-[15px]"
+              placeholder="e.g., Father: Ramesh"
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
