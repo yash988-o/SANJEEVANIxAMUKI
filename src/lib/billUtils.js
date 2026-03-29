@@ -73,7 +73,7 @@ export const generateBillPDF = (transaction) => {
       1: { halign: 'left' },
       3: { halign: 'right' }
     },
-    head: [['S.N.', 'Discription in bill', 'Price', 'Amount(Rs.)']],
+    head: [['S.N.', 'Description', 'Price', 'Amount(Rs.)']],
     body: [
       [
         '1',

@@ -353,15 +353,6 @@ export default function Main() {
                 >
                   💵 Cash
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMode('UPI')}
-                  className={`flex-1 flex items-center justify-center min-h-[56px] rounded-[12px] border transition-all active:scale-95 ${
-                    paymentMode === 'UPI' ? 'bg-royal text-white font-bold border-royal ring-2 ring-royal ring-offset-2' : 'bg-royal/10 text-royal border-transparent hover:border-royal/30 outline-none'
-                  }`}
-                >
-                  📱 UPI
-                </button>
               </div>
             </div>
           </div>
