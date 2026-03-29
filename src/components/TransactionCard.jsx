@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, Calendar, Clock, MessageSquare, ChevronDown, CheckCircle2, Download, Trash2, RefreshCcw, Edit3, Loader2 } from 'lucide-react';
+import { Phone, Calendar, Clock, MessageSquare, ChevronDown, CheckCircle2, Download, Trash2, RefreshCcw, Edit3, Loader2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
@@ -30,13 +30,18 @@ export default function TransactionCard({ transaction, variant = 'full', isTrash
     note: transaction.note || '',
     payment_mode: transaction.payment_mode || 'Cash',
     category: transaction.category || 'Standard',
-    transaction_at: localIsoString
+    transaction_at: localIsoString,
+    profile_name: transaction.profiles?.name || '',
+    father_name: transaction.profiles?.guardian || '',
+    age: transaction.profiles?.age || '',
+    gender: transaction.profiles?.gender || ''
   });
 
   const handleSaveEdit = async (e) => {
     e.stopPropagation();
     setSavingEdit(true);
-    const { error } = await supabase.from('transactions').update({
+    
+    const { error: tError } = await supabase.from('transactions').update({
       amount: Number(editData.amount),
       type: editData.type,
       note: editData.note || null,
@@ -45,11 +50,18 @@ export default function TransactionCard({ transaction, variant = 'full', isTrash
       transaction_at: new Date(editData.transaction_at).toISOString()
     }).eq('id', transaction.id);
     
-    if (!error) {
+    const { error: pError } = await supabase.from('profiles').update({
+      name: editData.profile_name,
+      guardian: editData.father_name || null,
+      age: editData.age ? Number(editData.age) : null,
+      gender: editData.gender || null
+    }).eq('id', transaction.profile_id);
+    
+    if (!tError && !pError) {
       window.location.reload();
     } else {
-      console.error(error);
-      alert("Error updating transaction");
+      console.error(tError || pError);
+      alert("Error updating transaction/profile");
     }
     setSavingEdit(false);
   };
@@ -387,8 +399,15 @@ export default function TransactionCard({ transaction, variant = 'full', isTrash
 
               <div className="flex justify-between gap-2 w-full mt-2">
                 {isEditing ? (
-                  <div className="bg-white p-3 border border-borderBlue rounded-[10px] space-y-3 w-full" onClick={(e) => e.stopPropagation()}>
-                    <div className="font-bold text-navyDark text-[14px] mb-2 border-b pb-2">Edit Transaction</div>
+                  <div className="bg-white p-3 border border-borderBlue rounded-[10px] space-y-3 w-full relative" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex justify-between items-center border-b pb-2 mb-2">
+                       <div className="font-bold text-navyDark text-[14px]">Edit Transaction</div>
+                       <button onClick={(e) => { e.stopPropagation(); setIsEditing(false); }} className="text-muted hover:text-navyDark" title="Close">
+                         <X className="w-5 h-5" />
+                       </button>
+                    </div>
+                    
+                    <div className="text-[12px] font-bold text-royal bg-royal/10 px-2 py-1 rounded inline-block">Transaction Details</div>
                     
                     <div className="grid grid-cols-2 gap-3">
                       <div>
@@ -427,6 +446,32 @@ export default function TransactionCard({ transaction, variant = 'full', isTrash
                       <label className="block text-[11px] font-bold text-navyDark mb-1">Note</label>
                       <input type="text" value={editData.note} onChange={e => setEditData({...editData, note: e.target.value})} className="w-full h-9 px-2 rounded-[6px] border border-borderBlue focus:border-royal outline-none text-[13px]" />
                     </div>
+
+                    <div className="text-[12px] font-bold text-royal bg-royal/10 px-2 py-1 rounded inline-block mt-3">Customer Profile</div>
+                    <div className="grid grid-cols-2 gap-3">
+                       <div>
+                         <label className="block text-[11px] font-bold text-navyDark mb-1">Name</label>
+                         <input type="text" value={editData.profile_name} onChange={e => setEditData({...editData, profile_name: e.target.value})} className="w-full h-9 px-2 rounded-[6px] border border-borderBlue focus:border-royal outline-none text-[13px]" />
+                       </div>
+                       <div>
+                         <label className="block text-[11px] font-bold text-navyDark mb-1">Father Name</label>
+                         <input type="text" value={editData.father_name} onChange={e => setEditData({...editData, father_name: e.target.value})} className="w-full h-9 px-2 rounded-[6px] border border-borderBlue focus:border-royal outline-none text-[13px]" />
+                       </div>
+                       <div>
+                         <label className="block text-[11px] font-bold text-navyDark mb-1">Age</label>
+                         <input type="number" value={editData.age} onChange={e => setEditData({...editData, age: e.target.value})} className="w-full h-9 px-2 rounded-[6px] border border-borderBlue focus:border-royal outline-none text-[13px]" />
+                       </div>
+                       <div>
+                         <label className="block text-[11px] font-bold text-navyDark mb-1">Gender</label>
+                         <select value={editData.gender} onChange={e => setEditData({...editData, gender: e.target.value})} className="w-full h-9 px-2 bg-white rounded-[6px] border border-borderBlue focus:border-royal outline-none text-[13px]">
+                           <option value="">Select</option>
+                           <option value="Male">Male</option>
+                           <option value="Female">Female</option>
+                           <option value="Other">Other</option>
+                         </select>
+                       </div>
+                    </div>
+
                     <div className="flex space-x-2 pt-2">
                       <button onClick={(e) => { e.stopPropagation(); setIsEditing(false); }} className="flex-1 h-9 bg-gray-100 text-gray-600 font-bold rounded-[6px] text-[13px]">Cancel</button>
                       <button onClick={handleSaveEdit} disabled={savingEdit} className="flex-1 h-9 bg-royal text-white font-bold rounded-[6px] flex items-center justify-center text-[13px]">

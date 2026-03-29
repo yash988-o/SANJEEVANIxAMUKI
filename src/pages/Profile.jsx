@@ -9,6 +9,8 @@ export default function Profile() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
+  const [familyProfiles, setFamilyProfiles] = useState([]);
+  const [selectedSubProfileId, setSelectedSubProfileId] = useState('all');
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -19,31 +21,42 @@ export default function Profile() {
   const fetchProfileData = async () => {
     setLoading(true);
     // Fetch Profile
-    const { data: profileData, error: profileErr } = await supabase
+    const { data: initialProfile } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', id)
       .single();
 
-      if (profileData) {
-      setProfile(profileData);
+    if (initialProfile) {
+      setProfile(initialProfile);
 
-      // Fetch Transactions
-      const { data: transData } = await supabase
-        .from('transactions')
+      // Fetch all family profiles (same mobile)
+      const { data: family } = await supabase
+        .from('profiles')
         .select('*')
-        .eq('profile_id', id)
-        .eq('is_deleted', false)
-        .order('transaction_at', { ascending: false });
+        .eq('mobile', initialProfile.mobile);
         
-      if (transData) {
-        // Sort so pending (is_cleared=false) are on top, and cleared (is_cleared=true) are at the bottom.
-        // It's already sorted by transaction_at descending from the query, so a stable sort keeps newest on top for each group.
-        const sorted = [...transData].sort((a, b) => {
-          if (a.is_cleared === b.is_cleared) return 0;
-          return a.is_cleared ? 1 : -1;
-        });
-        setTransactions(sorted);
+      if (family) {
+        setFamilyProfiles(family);
+        const profileIds = family.map(p => p.id);
+
+        // Fetch Transactions for all these profiles
+        const { data: transData } = await supabase
+          .from('transactions')
+          .select('*, profiles(name, mobile, age, gender, guardian)')
+          .in('profile_id', profileIds)
+          .eq('is_deleted', false)
+          .order('transaction_at', { ascending: false });
+          
+        if (transData) {
+          // Sort so pending (is_cleared=false) are on top, and cleared (is_cleared=true) are at the bottom.
+          // It's already sorted by transaction_at descending from the query, so a stable sort keeps newest on top for each group.
+          const sorted = [...transData].sort((a, b) => {
+            if (a.is_cleared === b.is_cleared) return 0;
+            return a.is_cleared ? 1 : -1;
+          });
+          setTransactions(sorted);
+        }
       }
     }
     setLoading(false);
@@ -83,14 +96,25 @@ export default function Profile() {
         <h1 className="font-bold text-[20px] text-navyDark">Customer Profile</h1>
       </div>
 
-      <ProfileHeader profile={profile} transactions={transactions} onProfileUpdate={fetchProfileData} />
+      <ProfileHeader 
+        profile={profile} 
+        familyProfiles={familyProfiles} 
+        transactions={transactions} 
+        selectedSubProfileId={selectedSubProfileId}
+        setSelectedSubProfileId={setSelectedSubProfileId}
+        onProfileUpdate={fetchProfileData} 
+      />
 
       <div>
         {(() => {
-          const activeTx = transactions.filter(t => !t.is_cleared);
-          const clearedTx = transactions.filter(t => t.is_cleared);
+          const filteredTransactions = selectedSubProfileId === 'all' 
+            ? transactions 
+            : transactions.filter(t => t.profile_id === selectedSubProfileId);
 
-          if (transactions.length === 0) {
+          const activeTx = filteredTransactions.filter(t => !t.is_cleared);
+          const clearedTx = filteredTransactions.filter(t => t.is_cleared);
+
+          if (filteredTransactions.length === 0) {
             return (
               <div className="text-center p-8 bg-white border border-borderBlue rounded-[16px] text-muted">
                 No transactions found.
