@@ -32,6 +32,7 @@ export default function TransactionCard({ transaction, variant = 'full', isTrash
     category: transaction.category || 'Standard',
     transaction_at: localIsoString,
     profile_name: transaction.profiles?.name || '',
+    mobile: transaction.profiles?.mobile || '',
     father_name: transaction.profiles?.guardian || '',
     age: transaction.profiles?.age || '',
     gender: transaction.profiles?.gender || ''
@@ -52,6 +53,7 @@ export default function TransactionCard({ transaction, variant = 'full', isTrash
     
     const { error: pError } = await supabase.from('profiles').update({
       name: editData.profile_name,
+      mobile: editData.mobile,
       guardian: editData.father_name || null,
       age: editData.age ? Number(editData.age) : null,
       gender: editData.gender || null
@@ -409,6 +411,17 @@ export default function TransactionCard({ transaction, variant = 'full', isTrash
                     
                     <div className="text-[12px] font-bold text-royal bg-royal/10 px-2 py-1 rounded inline-block">Transaction Details</div>
                     
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                       <div>
+                         <label className="block text-[11px] font-bold text-navyDark mb-1">Customer Name</label>
+                         <input type="text" value={editData.profile_name} onChange={e => setEditData({...editData, profile_name: e.target.value})} className="w-full h-9 px-2 rounded-[6px] border border-borderBlue focus:border-royal outline-none text-[13px]" />
+                       </div>
+                       <div>
+                         <label className="block text-[11px] font-bold text-navyDark mb-1">Mobile Number</label>
+                         <input type="text" value={editData.mobile} onChange={e => setEditData({...editData, mobile: e.target.value})} className="w-full h-9 px-2 rounded-[6px] border border-borderBlue focus:border-royal outline-none text-[13px]" />
+                       </div>
+                    </div>
+                    
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[11px] font-bold text-navyDark mb-1">Amount</label>
@@ -447,12 +460,8 @@ export default function TransactionCard({ transaction, variant = 'full', isTrash
                       <input type="text" value={editData.note} onChange={e => setEditData({...editData, note: e.target.value})} className="w-full h-9 px-2 rounded-[6px] border border-borderBlue focus:border-royal outline-none text-[13px]" />
                     </div>
 
-                    <div className="text-[12px] font-bold text-royal bg-royal/10 px-2 py-1 rounded inline-block mt-3">Customer Profile</div>
+                    <div className="text-[12px] font-bold text-royal bg-royal/10 px-2 py-1 rounded inline-block mt-3">Additional Customer Info</div>
                     <div className="grid grid-cols-2 gap-3">
-                       <div>
-                         <label className="block text-[11px] font-bold text-navyDark mb-1">Name</label>
-                         <input type="text" value={editData.profile_name} onChange={e => setEditData({...editData, profile_name: e.target.value})} className="w-full h-9 px-2 rounded-[6px] border border-borderBlue focus:border-royal outline-none text-[13px]" />
-                       </div>
                        <div>
                          <label className="block text-[11px] font-bold text-navyDark mb-1">Father Name</label>
                          <input type="text" value={editData.father_name} onChange={e => setEditData({...editData, father_name: e.target.value})} className="w-full h-9 px-2 rounded-[6px] border border-borderBlue focus:border-royal outline-none text-[13px]" />
